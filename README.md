@@ -1,8 +1,12 @@
 # CoreRelay
 
-[Application source](https://github.com/gqzy999/corerelay-genlayer) · [SampleScope primitive](https://github.com/gqzy999/sample-scope-primitive)
+[Live application](https://gqzy999.github.io/corerelay-genlayer/) · [Application source](https://github.com/gqzy999/corerelay-genlayer) · [SampleScope primitive](https://github.com/gqzy999/sample-scope-primitive)
 
 A geological sample stewardship desk using GenLayer for source-grounded policy assessment and on-chain request transitions.
+
+## Try the application
+
+Use **Read finalized example** on the homepage to load the on-chain record without connecting a wallet. Expand **Registered plan & history**, then export the JSON record.
 
 ## Run
 
@@ -46,4 +50,4 @@ See `docs/contract.md` for consensus semantics, limitations and test coverage.
 
 ## Local checks
 
-19 frontend logic tests cover finalized success vs failure, receipt variants, timeout recovery, storage failures, role gates, stale record selection, URL validation and wallet rejection messages. These automated logic tests are separate from the recorded live lifecycle. Production build succeeds. Browser visual and interaction verification is pending.
+19 frontend logic tests cover finalized success vs failure, receipt variants, timeout recovery, storage failures, role gates, stale record selection, URL validation and wallet rejection messages. These automated logic tests are separate from the recorded live lifecycle. Production build succeeds. Desktop browser checks cover live record loading, history display and JSON download. Mobile layout and browser wallet signing have not been verified.
