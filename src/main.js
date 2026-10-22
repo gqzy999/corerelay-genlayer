@@ -2,7 +2,7 @@ import {TransactionJournal, permissions, validatePolicy, userError, isAddress} f
 import deployment from './deployment.json';
 import './style.css';
 const $=id=>document.getElementById(id);
-let client, reader, account, curator, record={}, loaded=null, busy=false;
+let client, reader, account, curator, record={}, loaded=null, busy=false, walletProvider=null;
 const journal=new TransactionJournal(localStorage);
 const sdk=()=>Promise.all([import('genlayer-js'),import('genlayer-js/chains')]);
 async function readClient(){if(!reader){const [{createClient},{studionet}]=await sdk();reader=createClient({chain:studionet});}return reader;}
@@ -51,11 +51,35 @@ async function read(){
   record=parsed;curator=operator;loaded=ctx;render();$('deployment-label').textContent='Contract read on Studionet';
 }
 async function connect(){
-  if(!window.ethereum)throw Error('Install or open an EIP-1193 wallet.');
-  const addresses=await window.ethereum.request({method:'eth_requestAccounts'});if(!addresses?.[0])throw Error('No wallet account selected.');
+  const provider=window.okxwallet||window.ethereum;
+  if(!provider?.request)throw Error('Install or open an EIP-1193 wallet such as OKX Wallet.');
+  const addresses=await provider.request({method:'eth_requestAccounts'});
+  if(!addresses?.[0])throw Error('No wallet account selected.');
+  const chainId=await provider.request({method:'eth_chainId'});
+  if(Number(chainId)!==61999)throw Error('Switch your wallet to Genlayer Studio Network (Chain ID 61999), then reconnect.');
   const [{createClient},{studionet}]=await sdk();
-  const candidate=createClient({chain:studionet,account:addresses[0],provider:window.ethereum});await candidate.connect('studionet');
-  account=addresses[0];client=candidate;$('connect').textContent=account.slice(0,6)+'…'+account.slice(-4);updateActions();
+  const candidate=createClient({chain:studionet,account:addresses[0],provider});
+  let snapCompatibilityMode=false;
+  if(provider===window.okxwallet&&provider!==window.ethereum){
+    candidate.chain=studionet;
+    snapCompatibilityMode=true;
+  }else{
+    try{
+      await candidate.connect('studionet');
+    }catch(e){
+      const message=String(e?.message||e);
+      if(!/wallet_getSnaps|wallet_requestSnaps|method not found|unsupported method/i.test(message))throw e;
+      candidate.chain=studionet;
+      snapCompatibilityMode=true;
+    }
+  }
+  walletProvider=provider;
+  account=addresses[0];client=candidate;
+  $('connect').textContent=account.slice(0,6)+'…'+account.slice(-4);
+  updateActions();
+  status('Wallet connected',snapCompatibilityMode
+    ? 'Wallet connected in EIP-1193 compatibility mode. This bypasses MetaMask Snap discovery; verify each GenLayer transaction flow before relying on writes.'
+    : 'Wallet connected to Studionet.');
 }
 async function track(p){
   if(!p)throw Error('No saved transaction to track.');
@@ -71,9 +95,11 @@ async function track(p){
 }
 async function write(method,args){
   journal.ensureWritable();if(!client)await connect();
-  const {a,k}=config(),actual=await window.ethereum.request({method:'eth_chainId'}),addresses=await window.ethereum.request({method:'eth_accounts'});
+  const provider=walletProvider||window.okxwallet||window.ethereum;
+  if(!provider?.request)throw Error('Wallet provider is unavailable. Reconnect your wallet.');
+  const {a,k}=config(),actual=await provider.request({method:'eth_chainId'}),addresses=await provider.request({method:'eth_accounts'});
   if(Number(actual)!==61999)throw Error('Switch wallet to Studionet (61999).');
-  if(addresses[0]?.toLowerCase()!==account?.toLowerCase()){client=undefined;throw Error('Wallet account changed. Reconnect before submitting.');}
+  if(addresses[0]?.toLowerCase()!==account?.toLowerCase()){client=undefined;account=undefined;walletProvider=null;throw Error('Wallet account changed. Reconnect before submitting.');}
   if(method!=='register'){
     const allowed=permissions(record,account,curator,current(),loaded);
     if(!(method==='assess'?allowed.assess:method==='decide'?allowed.decide:allowed.close))throw Error('Read this request and connect the authorized account before this action.');
@@ -98,4 +124,11 @@ $('example').onclick=()=>{$('key').value='CR-'+Date.now();$('sample').value='Ill
 $('address').addEventListener('input',updateActions);$('key').addEventListener('input',updateActions);
 $('export').onclick=()=>{const {a,k}=loaded;const blob=new Blob([JSON.stringify({contract:a,request_id:k,network:61999,record},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='corerelay-'+k.replace(/[^\w-]/g,'_')+'.json';link.click();URL.revokeObjectURL(url);};
 try{const p=journal.pending();if(p){$('address').value=p.address;$('key').value=p.key;$('resume').hidden=false;status('Pending transaction saved','Resume tracking before sending another operation.');}}catch(e){status('Saved transaction needs inspection',userError(e));}
-for(const event of ['accountsChanged','chainChanged'])window.ethereum?.on?.(event,()=>{client=undefined;account=undefined;$('connect').textContent='Reconnect wallet';updateActions();});
+for(const provider of new Set([window.okxwallet,window.ethereum].filter(Boolean))){
+  for(const event of ['accountsChanged','chainChanged'])provider.on?.(event,()=>{
+    if(provider!==walletProvider)return;
+    client=undefined;account=undefined;walletProvider=null;
+    $('connect').textContent='Reconnect wallet';updateActions();
+    status('Wallet changed','The connected account or network changed. Reconnect and verify Chain ID 61999 before continuing.');
+  });
+}
