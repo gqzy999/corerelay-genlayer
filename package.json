@@ -1,0 +1,21 @@
+{
+  "name": "corerelay",
+  "version": "0.3.0",
+  "description": "Geological sample policy and stewardship desk",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build --base=./",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js",
+    "verify:live": "node scripts/verify-live.mjs"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "genlayer-js": "1.1.8"
+  },
+  "private": true,
+  "devDependencies": {
+    "vite": "6.4.5"
+  }
+}
