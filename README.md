@@ -36,9 +36,11 @@ A saved transaction hash can be tracked after reload or timeout. New writes are 
 
 ## Deployment status
 
-The configured Studionet contract is `0x0A096B8E7E0ffC377DFEb37ae34E1Fb1bAF588F0`. Read request `CoreRelay-353-live-003` to inspect the completed example. `evidence/studionet.json` contains the five finalized successful transaction hashes and `evidence/request.json` contains the final readback.
+The configured Studionet contract is `0x0A096B8E7E0ffC377DFEb37ae34E1Fb1bAF588F0`. Read request `CoreRelay-353-live-003` to inspect the completed example. `evidence/studionet.json` records the five finalized successful transaction hashes for the example lifecycle.
 
-Run `npm run verify:live` for read-only verification of source equality, history, curator and all five transaction results. The example is an illustrative workflow record; no physical sample was held or approved. Curator actions are restricted to the dedicated test deployment operator. Browser wallet signing has not been verified.
+Run `npm run verify:live` for read-only verification of source equality, history, curator and all five transaction results. The example is an illustrative workflow record; no physical sample was held or approved. Curator actions are restricted to the dedicated test deployment operator.
+
+A separate desktop browser test with OKX Wallet on Studionet (chain ID 61999) verified wallet connection, request registration, record readback, and a finalized assessment transaction for request `CR-1792695507284`. The transaction finalized with consensus accepted and execution success: `0x21f0d4b88127f58d16e7852551b42dec9b84f8efb6e1ba9a769e5b4c83cdcd2c`. The request reached `CURATOR_REVIEW`, but all four policy gates still displayed “No policy evidence recorded”; this verifies the browser-wallet write and state-transition path, not a completed evidence-backed policy assessment. Curator-only authorize/decline/close actions and mobile wallet interactions have not been verified.
 
 ## Design and data
 
@@ -50,4 +52,4 @@ See `docs/contract.md` for consensus semantics, limitations and test coverage.
 
 ## Local checks
 
-19 frontend logic tests cover finalized success vs failure, receipt variants, timeout recovery, storage failures, role gates, stale record selection, URL validation and wallet rejection messages. These automated logic tests are separate from the recorded live lifecycle. Production build succeeds. Desktop browser checks cover live record loading, history display and JSON download. Mobile layout and browser wallet signing have not been verified.
+19 frontend logic tests cover finalized success vs failure, receipt variants, timeout recovery, storage failures, role gates, stale record selection, URL validation and wallet rejection messages. These automated logic tests are separate from the recorded live lifecycle. Production build succeeds. Desktop browser checks cover live record loading, history display, JSON export, and the OKX Wallet registration/assessment flow described above. Mobile layout and mobile wallet interactions remain unverified; curator-only authorize/decline/close actions have not been browser-verified.
