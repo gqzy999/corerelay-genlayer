@@ -17,7 +17,10 @@ export function permissions(record, account, curator, current, loaded) {
     close:!!operator&&record.state==='AUTHORIZED'};
 }
 export function classifyReceipt(receipt) {
-  const state=String(receipt?.statusName??receipt?.status??'').toUpperCase();
+  const rawState=String(receipt?.statusName??receipt?.status??'').toUpperCase();
+  // Legacy Studio SDK may return numeric status 7 for the FINALIZED state.
+  // The explorer exposes the same receipt as FINALIZED; normalize before classifying execution.
+  const state=rawState==='7'?'FINALIZED':rawState;
   const leader=receipt?.consensus_data?.leader_receipt;
   const receipts=Array.isArray(leader)?leader:[leader];
   const item=receipts.filter(r=>r && r.result?.payload!=='idle' && r.genvm_result?.error_code!=='CONSENSUS_VALIDATOR_QUORUM_REACHED').at(-1);
