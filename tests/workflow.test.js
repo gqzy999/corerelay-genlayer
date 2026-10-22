@@ -8,6 +8,7 @@ function storage(){const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(
 test('accepted does not imply finalized success',()=>assert.equal(classifyReceipt(receipt('ACCEPTED','FINISHED_WITH_RETURN')).kind,'unresolved'));
 test('missing execution evidence stays unresolved',()=>assert.equal(classifyReceipt(receipt('FINALIZED',undefined)).kind,'unresolved'));
 test('Studio receipt array execution is recognized',()=>assert.equal(classifyReceipt({status:'FINALIZED',consensus_data:{leader_receipt:[{execution_result:'FINISHED_WITH_RETURN'}]}}).kind,'success'));
+test('legacy Studio numeric status 7 finalizes a completed return',()=>assert.equal(classifyReceipt({status:7,txExecutionResultName:'FINISHED_WITH_RETURN'}).kind,'success'));
 test('finalized rollback releases pending and retains receipt',()=>{const s=storage(),j=new TransactionJournal(s);j.remember(pointer);assert.equal(j.finish(receipt('FINALIZED','ROLLBACK')).kind,'failure');assert.equal(j.pending(),null);assert.ok(s.getItem('corerelay-last-transaction'));});
 test('reload resumes same hash and blocks another write',()=>{const s=storage();new TransactionJournal(s).remember(pointer);const j=new TransactionJournal(s);assert.equal(j.pending().hash,hash);assert.throws(()=>j.ensureWritable());});
 test('timeout or unknown execution preserves pending',()=>{const j=new TransactionJournal(storage());j.remember(pointer);j.finish(receipt('FINALIZED','UNKNOWN'));assert.equal(j.pending().hash,hash);});
